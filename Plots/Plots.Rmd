@@ -1,0 +1,440 @@
+---
+ioslides_presentation: default
+author: "Lusine Adunts, Natela Azoyan, Liana Darbinyan, Hakob Nahapetyan"
+subtitle: "DS 116 - Data Visualization"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+title: "Group Project"
+beamer_presentation:
+  theme: CambridgeUS
+colortheme: dolphin
+fonttheme: structurebold
+pandoc_args: "--pdf-engine=xelatex"
+includes:
+  in_header: "latex-topmatter.tex"
+fontsize: 10pt
+institute: American University of Armenia
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = F,  collapse = TRUE, warning=F, message = F, out.width = '80%', 
+                      size = 'footnotesize', cache = TRUE)
+options(scipen = 999)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(gganimate)
+library(viridis)
+library(ggrepel)
+library(knitr)
+library(reticulate)
+library(formatR)
+library(raster)
+library(ggpubr)
+library(jpeg)
+library(maps)
+library(rnaturalearth)
+library(rgeos)
+library(classInt)
+library(sf)
+library(ggmap)
+library(lubridate)
+library(plotly)
+library(forcats)
+library(viridis)
+library(stringr)
+library(tidyr)
+library(leaflet)
+library(scales)
+library(easylabel)
+
+df_long_lat <- read.csv('data_with_longlat.csv') 
+corrected <- read.csv('Space_Corrected.csv')
+astronauts <- read.csv('Astronauts.csv')
+tesla = read.csv('TSLA.csv')
+
+options(future.plan = "multicore")
+```
+
+```{r, echo = F, fig.cap="Figure 1"}
+# animation of missions per country and year
+
+pl <- ggplot(data = df_long_lat, aes(x=CompanyCountry, fill=SuccessFailure)) + geom_bar(position = 'dodge') + 
+  transition_states(Year) +
+  ease_aes('sine-in-out') +
+  labs(fill='Success vs Failure', title = 'Year: {closest_state}') + ylab('Number of Missions') + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = 'Pastel1')
+
+gganimate::animate(pl, fps = 10, duration = 30)
+```
+###
+Success
+```{r, echo = F, fig.cap="Figure 2"}
+# map of the Success locations
+
+grouped <- df_long_lat %>% group_by(Location, Longitude, Latitude, SuccessFailure) %>% summarise(Missions=n())
+
+data <- subset(grouped, SuccessFailure=='Success')[c(1,2,3,5)]
+mytext=paste("Location: ", data$Location, "<br/>Missions: ", data$Missions, sep=" ") %>%
+  lapply(htmltools::HTML)
+
+leaflet(data) %>%
+  addTiles()  %>%
+  setView( lat=40.193317, lng=44.504462 , zoom=40) %>%
+  addProviderTiles("Esri.WorldImagery") %>%
+  addCircles(~Longitude, ~Latitude,
+    fillColor='rgb(208, 88, 17)', fillOpacity = 0.7, radius=~sqrt(Missions)*40000, stroke=FALSE, weight = 1,
+    label = mytext,
+    labelOptions = labelOptions( style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "13px", direction = "auto")
+  )
+```
+Failure
+```{r, echo = F, fig.cap="Figure 3"}
+# map of the Failure locations
+
+data <- subset(grouped, SuccessFailure=='Failure')[c(1,2,3,5)]
+mytext=paste("Location: ", data$Location, "<br/>Missions: ", data$Missions, sep=" ") %>%
+lapply(htmltools::HTML)
+leaflet(data) %>%
+  addTiles()  %>%
+  setView( lat=40.193317, lng=44.504462 , zoom=40) %>%
+  addProviderTiles("Esri.WorldImagery") %>%
+  addCircles(~Longitude, ~Latitude,
+    fillColor='rgb(208, 88, 17)', fillOpacity = 0.7, radius=~sqrt(Missions)*40000, stroke=FALSE, weight = 1,
+    label = mytext,
+    labelOptions = labelOptions( style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "13px", direction = "auto")
+  )
+```
+###
+
+Success
+```{r, echo = F, fig.cap="Figure 4"}
+# comparing Tesla stock
+
+spacex <- corrected %>% filter(Company.Name == "SpaceX")
+spacex <- spacex[-2]
+spacex$Date <- format(as.POSIXct(spacex$Datum, format = '%a %b %d, %Y %H:%M UTC'),'%Y-%m-%d')
+space_tsl <- spacex %>% right_join(tesla, by= "Date", "Adj.Close")
+space_tsl <- space_tsl %>% drop_na()
+tes <- function(choice){
+    date = as.Date(choice)
+    tsl_A20 <- tesla %>% filter((Date > (date - 15)) & (Date < (date+ 15)))
+    ggplot(tsl_A20, aes(x = Date, y = Adj.Close, group = 1)) +
+      geom_line() +
+      ggtitle(paste('Tesla Stock Prices and SpaceX Launch of the date of ',choice,sep=' ')) +
+      geom_vline(xintercept = choice, color = 'dark blue')+
+      theme_bw()+
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, color = 'dark blue'))
+}
+tes("2019-06-12")
+```
+Success
+```{r, echo = F, fig.cap="Figure 5"}
+tes("2017-10-09")
+```
+Success
+```{r, echo = F, fig.cap="Figure 6"}
+tes("2017-05-01")
+```
+Success
+```{r, echo = F, fig.cap="Figure 7"}
+tes("2018-08-07")
+```
+Failure
+```{r, echo = F, fig.cap="Figure 8"}
+tes("2012-10-08")
+```
+
+### Top 3 Countries
+```{r, echo = F, fig.cap="Figure 9"}
+# missions of Russia
+
+ggplot(subset(df_long_lat,CompanyCountry=='Russia'),aes(x=Year,fill=SuccessFailure)) + 
+    geom_bar(position='dodge') +
+    theme_bw() +
+    scale_fill_brewer(palette = 'Pastel1') +
+    ggtitle('Space Missions of Russia') +
+    labs(fill='Success vs Failure') +
+    ylab('Number of Missions')
+```
+
+```{r, echo = F, fig.cap="Figure 10"}
+# missions of USA
+
+ggplot(subset(df_long_lat,CompanyCountry=='USA'),aes(x=Year,fill=SuccessFailure)) + geom_bar(position='dodge') +
+    theme_bw() +
+    scale_fill_brewer(palette = 'Pastel1') +
+    ggtitle('Space Missions of US') +
+    labs(fill='Success vs Failure') +
+    ylab('Number of Missions')
+```
+
+```{r, echo = F, fig.cap="Figure 11"}
+# missions of China
+
+ggplot(subset(df_long_lat,CompanyCountry=='China'),aes(x=Year,fill=SuccessFailure)) + geom_bar(position='dodge') +
+    theme_bw() +
+    scale_fill_brewer(palette = 'Pastel1') +
+    ggtitle('Space Missions of China') +
+    labs(fill='Success vs Failure') +
+    ylab('Number of Missions')
+```
+### 
+```{r, echo = F, fig.cap="Figure 12"}
+# proportions of Success and Failure per country
+
+countries.succ.fail <- df_long_lat %>% group_by(CompanyCountry, SuccessFailure) %>% summarise(count=n())
+ggplot(countries.succ.fail, aes(CompanyCountry, count, fill=SuccessFailure)) +
+    geom_bar(stat='identity',position = 'fill') +
+    theme(axis.text.x = element_text(angle = 60,hjust=1)) + ylab('Missions proportion') +
+    ggtitle('Countries with proportion of Success and Failure') + xlab('Country') +
+    scale_fill_brewer(palette = 'Pastel1')
+```
+###
+```{r, echo = F, fig.cap="Figure 13"}
+# top 10 companies based on the number of missions done
+
+top_companies <- df_long_lat %>% group_by(Company) %>% summarise(n=n())
+comps <- top_companies[order(top_companies$n,decreasing=T),][1:10,]$Company
+top_20_companies <- df_long_lat %>% group_by(Company, SuccessFailure) %>% summarise(n=n())
+top_20_companies <- subset(top_20_companies, Company %in% comps)
+ggplot(top_20_companies) + geom_col(aes(x=Company,y=n), fill="#B3CDE3") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab('Number of Missions') +
+    ggtitle('Top 10 companies based on the number of missions') +
+    scale_fill_brewer(palette = 'Pastel1')
+```
+### 
+```{r, echo = F, fig.cap="Figure 14"}
+# top 10 companies based on the money spend on rockets/missions
+
+corr <- corrected[3:9]
+corr$Rocket <- as.numeric(corr$Rocket)
+corr$Rocket[is.na(corr$Rocket)] <- 0
+corr$Status.Mission[corr$Status.Mission!='Success'] <- 'Failure'
+companies.price <- corr %>% group_by(Company.Name) %>% summarise(Price=sum(Rocket))
+comps <- companies.price[order(companies.price$Price,decreasing=T),][1:10,]$Company.Name
+companies.price <- corr %>% group_by(Company.Name, Status.Mission) %>% summarise(Price=sum(Rocket))
+companies.price <- subset(companies.price, Company.Name %in% comps)
+ggplot(companies.price) + geom_col(aes(x=Company.Name,y=Price), fill="#FBB4AE") +
+    theme_bw() + ylab('Price (in $million)') +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab('Company') +
+    ggtitle('Top 10 companies based on the money spent on rockets/missions') +
+    scale_fill_brewer(palette = 'Pastel1')
+```
+```{r, echo = F, fig.cap="Figure 15"}
+# the number of missions per weekday
+
+success_grouped_weekdays <- subset(df_long_lat,SuccessFailure=='Success') %>% group_by(WeekdayN) %>% summarise(n=n())
+failure_grouped_weekdays <- subset(df_long_lat,SuccessFailure!='Success') %>% group_by(WeekdayN) %>% summarise(n=n())
+ggplot() + geom_line(success_grouped_weekdays,mapping=aes(x=WeekdayN+1,y=n),size=3,color='#FBB4AE') +
+    geom_line(failure_grouped_weekdays,mapping=aes(x=WeekdayN+1,y=n),size=3,color='#B3CDE3') +
+    scale_x_discrete(limit=c('Mon','Tue','Wed','Thu','Fri','Sat','Sun')) +
+    ylab('Number of Missions') + xlab('Weekdays') + theme_bw() +
+    ggtitle('The number of missions per weekday') +
+    annotate("text", x=7, y=260, label= "Success",color='#FBB4AE',size=6.4) +
+    annotate("text", x=7, y=64, label= "Failure",color='#B3CDE3',size=6.4)
+```
+### 
+```{r, echo = F, fig.cap="Figure 16"}
+# missions done by males and females by year
+
+grd <- astronauts %>% group_by(Year.of.mission,Sex) %>% summarise(count=n())
+grd <- grd[1:93,]
+grd %>% plot_ly(x = ~Year.of.mission, y = ~count, type = 'bar',
+  color = ~Sex,
+  colors = c(M = '#B3CDE3', F = '#FBB4AE')) %>% layout(title = 'Missions done by Males and Females by Year',
+                                                       xaxis = list(title='Year'), yaxis = list(title='Number of Missions'))
+```
+### 
+```{r, echo = F, fig.cap="Figure 17"}
+# top 8 countries women astronauts come from
+
+grd <- subset(astronauts, Sex == 'F')
+grd <- grd %>% group_by(Nationality) %>% summarise(count=n())
+grd$Nationality <- factor(grd$Nationality, levels = unique(grd$Nationality)[order(grd$count, decreasing = TRUE)])
+top_countries <- grd[order(grd$count,decreasing=T),][1:8,]$Nationality
+grd <- subset(grd, Nationality %in% top_countries)
+# grd <- grd[1:93,]
+grd %>% plot_ly(x = ~Nationality, y = ~count, type = 'bar', 
+  marker = list(color = '#FBB4AE',
+                      line = list(color = '#FBB4AE',
+                                  width = 1.5))) %>% layout(title = 'Top 8 countries women austronauts come from',
+                                                       xaxis = list(title='Country'), yaxis = list(title='Number of Missions'))
+```
+
+### 
+
+```{r, echo = F, fig.cap="Figure 18"}
+# density of days spent in space
+
+hours_sorted <- astronauts[order(astronauts$Hours.mission,decreasing=T),]
+hours_sorted[is.na(hours_sorted$Hours.mission),]$Hours.mission <- 0
+density <- density(hours_sorted$Hours.mission/24)
+fig <- plot_ly(x = ~density$x, y = ~density$y, mode = 'lines', type='scatter')
+fig <- fig %>% layout(xaxis = list(title = 'Days'),
+         yaxis = list(title = 'Density'), title = 'Density of Days spent in Space')
+fig
+```
+###
+```{r, echo = F, fig.cap="Figure 19"}
+df_long_lat$Date <- as.Date(df_long_lat$Date)
+launches_time_series <-
+  df_long_lat %>% dplyr::select(Company, Date, Country) %>%
+  dplyr::mutate(company_name = fct_lump(Company, 11)) %>%
+  filter(company_name != "Other") %>%
+  mutate(launch_year = year(as.Date(Date))) %>%
+  mutate(comp_country_loc = paste(Company, Country, sep = " - ")) %>%
+  group_by(comp_country_loc) %>%
+  summarise( Count = n(), launch_year = launch_year,
+             start_year = min(launch_year),
+             end_year = max(launch_year),
+             age = end_year - start_year) %>%
+  ungroup() %>%
+  group_by(comp_country_loc, launch_year, start_year, end_year) %>%
+  summarise(Count = n()) %>%
+    # filtering these two, as one of them had 0 launches, the other had only 1
+  filter(!comp_country_loc %in% c("CASC - Yellow Sea", "Arianespace - Kazakhstan")) %>%
+  
+  
+  arrange(desc(Count)) %>%
+  
+  ggplot(aes(x = launch_year, y = Count,
+             text = paste("Company-Country: ", comp_country_loc,
+                          "<br>Launch Year: ", launch_year,
+                          "<br>Number of Launches: ", Count))) +
+  geom_point(aes(col = comp_country_loc), size = 1) +
+  geom_line(aes(group = comp_country_loc, col = comp_country_loc)) +
+  geom_text(aes(x = start_year+2, y = max(Count-5), label = paste("From", start_year)), size = 2) +
+  geom_text(aes(x = end_year-2, y = max(Count-5), label = paste("To", end_year)), size = 2) +
+  facet_wrap(vars(comp_country_loc), scales = "free_x", ncol = 7) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme_bw() +
+scale_fill_brewer(palette = 'Pastel1') +
+  theme(legend.position = 'none') +
+  scale_x_continuous(expand = expansion(add = c(8, 8))) +
+  labs(
+    title = "Country, Company, Number of launches time series",
+    subtitle = "Line plot, Country, Company, Number of launchs time series",
+    caption = "All Space Missions starting from 1957",
+    x = "Launch year",
+    y = "Number of launches"
+  )
+
+ggplotly(launches_time_series, tooltip = "text")
+```
+###
+```{r, echo = F, fig.cap="Figure 20"}
+space_mission_loc <- corrected %>% mutate(Country =  word(Location,-1))
+
+country_spents <-
+  space_mission_loc %>% dplyr::select(Country, Rocket) %>%
+  mutate(country = fct_lump(Country, 25)) %>%
+  filter(!(is.na(Rocket) | Rocket == "")) %>%
+  group_by(country) %>%
+  summarise(Total_spent = sum(as.numeric(gsub(",", "", Rocket)))/1000) %>%
+  ungroup() %>%
+  arrange(desc(Total_spent)) %>%
+  ggplot(aes(x = fct_reorder(country, Total_spent), y = Total_spent, label = paste0(round(Total_spent, 1),"B"),
+             text = paste("Country: ", fct_reorder(country, Total_spent),
+                          "<br>Total Spent: ", Total_spent,
+                          "<br>Total Spent in B: ", paste0(round(Total_spent,1),"B")))) +
+  geom_col(fill = '#91afc4') +
+  geom_text(hjust = -0.8, color = '#a36b22') +
+  theme_minimal() +
+  theme_bw() +
+  coord_flip() +
+  scale_y_continuous(labels = unit_format(unit = "B"), expand = expansion(add = c(0, 13))) +
+  labs(
+    title = "Total Cost by Country",
+    subtitle = "Pie Plot, Total Cost by Country",
+    caption = "All Space Missions from 1957",
+    fill = "",
+    x = "Country Name",
+    y = "Total Spending"
+  )
+
+ggplotly(country_spents, tooltip = "text")
+```
+###
+```{r, echo = F, fig.cap="Figure 21"}
+
+launches_per_month_2022 <-
+  df_long_lat %>% dplyr::select(Date, Country) %>%
+  mutate(country = fct_lump(Country, 5)) %>%
+  mutate(launch_month = month(Date, label = TRUE),
+         launch_year = year(Date)) %>%
+  filter(launch_year == 2022) %>%
+      group_by(country, launch_month) %>%
+      summarise(Count = n()) %>%
+      arrange(desc(Count)) %>%
+      ggplot(aes(x = launch_month, y = Count, label = Count)) +
+      geom_col(aes(fill = launch_month)) +
+      geom_text(vjust = 1.2, col = "#a36b22") +
+      scale_fill_viridis(discrete = TRUE) +
+      facet_grid(vars(country)) +
+      theme_bw() +
+      scale_fill_brewer(palette = 'Pastel1') +
+      theme(legend.position = "none") +
+      labs(
+        title = "This year (2022) launches per month for each country *some data is missing",
+        subtitle = "",
+        caption = "All Space Missions from 1957",
+        x = "Launch Month",
+        y = "Number of launches"
+      )
+    
+launches_per_month_2022
+```
+###
+```{r, echo = F, fig.cap="Figure 22"}
+country_rocket_launches <- df_long_lat %>% dplyr::select(Date, Country) %>%
+  mutate(country = fct_lump(Country, 5)) %>% 
+  mutate(launch_year = year(Date)) %>%
+  group_by(country, launch_year) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count)) %>%
+  ggplot(aes(x = launch_year, y = Count, fill = country,
+             text = paste("Country: ", country,
+                          "<br>Launch Year: ", launch_year,
+                          "<br>Number of Launches: ", Count)))
+country_rocket_launches <- country_rocket_launches + 
+  geom_col(position = "fill") +
+  scale_x_continuous(breaks = seq(from = 1956, to = 2020, by = 4)) +
+  scale_fill_brewer(palette = "Set3") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme(axis.line = element_line(colour = "darkblue",
+                                 size = 2)) +
+  labs(
+    title = "Launches by year by country (leading)",
+    subtitle = "Column plot, launches by year by country (leading)",
+    caption = "All Space Missions from 1957",
+    x = "Year",
+    y = "Count Scaled",
+    fill = "Country"
+  )
+
+g <- ggplotly(country_rocket_launches, tooltip = "text")
+g
+```
+###
+```{r, echo = F, fig.cap="Figure 23"}
+# occupation of astronauts per country
+
+astronauts$Nationality = str_to_upper(astronauts$Nationality)
+    astronauts$Occupation = str_to_upper(astronauts$Occupation)
+    
+    astr<-filter(astronauts, Nationality %in% c('U.S.','U.K./U.S.','U.S.S.R/RUSSIA','KAZAKHSTAN','FRANCE','U.K.','CHINA',
+                                                'JAPAN'))
+    p = ggballoonplot(as.data.frame(table(x = astr$Occupation, y = astr$Nationality)), fill = "value")+
+  	theme_bw() +
+  	scale_fill_gradientn(colours=RColorBrewer::brewer.pal(7,"Pastel1")) +
+      theme(axis.text.x = element_text(angle = 60, vjust = 0.5, hjust=1)) +
+      labs(fill = "Frequency",title="Occupation of Astronauts per Country", xlab("Occupation"),ylab("Countries"))
+    
+    ggplotly(p)
+```
+

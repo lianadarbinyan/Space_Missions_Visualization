@@ -1,0 +1,112 @@
+---
+title: "Space Missions Analysis"
+author: "Author: Lusine Adunts, Natela Azoyan, Liana Darbinyan, Hakob Nahapetyan"
+date: "05/12/2022"
+output:
+  pdf_document:
+    
+    fig_caption: yes
+    fig_height: 3.5
+    fig_width: 6
+    # spacing: double
+    number_sections: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+  word_document:
+    toc: yes
+always_allow_html: yes
+header-includes:
+   - \usepackage{setspace}
+   - \doublespacing
+# header-includes:
+# - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+\newpage
+
+# Absract
+The outer space has always interested humans. They tried to understand the physics and the philosophy of the universe throughout the whole history of humanity. However, the major achievements of this discipline are achieved starting from 20th century, specifically 1957 with the first space mission. Later on, many other missions were done. In our project, we analysed the data of these missions, information on the astronauts and the tesla stock change with respect to SpaceX missions. As a result of our analysis, we found out that USSR and US were competing in space race during the Cold War. However, after the dissolution of USSR the number of space missions drastically. Additionally, we noticed that the leader company in the number of missions is RVSN USSR. As a result of analysing the astronauts data we concluded that women astronauts started to be engaged in space race in 1980's. Additionally, we saw that the success of SpaceX missions does not always unequivocally lead to increase in the stock price of Tesla. We saw that wednesday is the lucky day for doing a mission. And finally, we confirmed that the space exploration and news increase the interest in people to learn more about outer space. 
+
+# Introduction
+Space exploration is the process of using technology and astronomy to explore the universe. Although telescopes are widely used to investigate the space, the derived information is not enough. To come to wider description of the outer space, humans have always been in interested in visiting the space physically, appearing on other planets and investigating the space in a smaller distance. Moreover, space exploration is used to validate theories on space made by scientists. 
+Many scientific breakthroughs and inventions happened due to the space exploration. For example, dust busters (a.k.a. vacuum cleaners) were made as a result of the Apollo moon landings; they used tools for drilling and taking rock samples in space, which led to creation of dust busters. Another example is LASIK surgery; the device used for tracking astronauts' eyes in weightlessness during space exploration has become an essential part of LASIK surgery and eye surgery. Other ones are GPS, breast cancer treatment, lightweight breathing systems and many others.
+The first space mission was done in 1957, October 4 when first artificial Earth satellite Sputnik 1 launched into Earth orbit. After a few decades of exploration humans have reached now Pluto and the other side of the Moon.
+
+\newpage
+
+# Methods
+
+For the project we have used four data. The main one was about space missions about missions from 1957 to 2022. The second data again contained information about the missions. However, the two data had difference in the number of observations and columns; the second one had also column about some of the mission costs. The third data contained information on astronauts and the fourth one contained the stock prices of Tesla.
+\
+For the analysis we preprocessed the first data in Python. We added longitude and latitude of each location, the country each company belongs to, weekday of each date and did some other changes. As a result, the columns were: Company, Location, Date, Time, Rocket, Mission, RocketStatus, Price, MissionsStatus, Longitude, Latitude, Country, CompanyCountry, Weekday.
+\
+The visualizations were done in R, using mainly ggplot, plotly, ggplotly, gganimate, leaflet, ggExtra and other libraries. As a result, we made plots, animation, maps and interactive plots. 
+For interactive representation of visualizations we created RShiny dashboard.
+
+\newpage
+
+# Results
+
+First, we wanted to see how the number of missions with success and failure status of each country changed by year. As the research has shown, space race timeline starts in 1957, during the Cold War, the period of political hostility between USSR and US. The figure 1 (animation) proves the truthness of the hypothesis. For about one decade, only these two superpowers were doing space missions and were competing to be the leader in the space exploration. 
+\
+
+As the Figure 1 showed, 3 leaders in space exploration were USSR/Russia, US, China. We analyzed them separately to see how their activity changed over time. Figure 9 showed that USSR participated in space exploration much more actively than Russia. However, US remained its activity nearly stable, and China increased its activity lately (Figure 10 and Figure 11). Also, Figure 12 shows that these 3 countries had almost the same proportion of success to failure with China having slightly more success compared to US and Russia. Also, comparing the money spent on missions, one can notice that US has spent much more money than Russia (Figure 20, contains some missing data). Additionally, we hypothesized that China and US are leading in space race now and confirmed the hypothesis with Figure 21, which shows the space missions done this year by each country, and with Figure 22, which shows space missions done every year by each country. It is reasonable to tell that the expected launches for China for 2023 has potential to be equal to USA's intensity. 
+
+
+\
+
+Next, we checked the most popular mission locations. Our hypothesis was that the most popular locations are in either in Russia or in US. However, Figure 2 and Figure 3 showed that the most popular succeeded missions location was Russia, and the most popular failed missions location was Kazakhstan. Research showed that the Baikonur Cosmodrome in Kazakhstan was a location widely used by USSR as a spot for launch. It is still in use by Russia now.
+
+\
+
+Next, we hypothesized that the company that leads in number of missions would be NASA or SpaceX as they are actively engaged in space exploration. However, Figure 13 showed that the leader is RVSN USSR. Another interesting fact is that NASA is the company that has spent most on space race (Figure 14, contains some missing data). Additionally, Figure 19 shows the companies per country. We can see the rise and the fall of RVSN USSR, and the rise of SpaceX and CASC. We assumed also that the newly created companies have not launched a lot of rockets during the first year of the existence. As a confirmation, we can see that the company that has the biggest number of launched rocket for the first year of its establishment is the "VKS RF" - Russian company, compared to the others, that at most launched 5 rockets during the first year (Boeing - USA 1989, 5 times), it has launched 12 rockets in 1992. 
+
+\
+
+We hypothesized also that the day on which the mission was done affects the status of it (success/failure). The hypothesis was confirmed with the help of Figure 15, where we clearly see that Wednesday is a lucky day for doing a mission. 
+
+\
+
+Another hypothesis was that the outcome of SpaceX missions affects the stock price of Tesla. However, it was not confirmed, as in some success cases (Figure 4 and Figure 5) we see that the stock price drastically increases, while in other cases (Figure 6 and Figure 7) it decreases. In the case of failure, the stock price decreases (Figure 8).
+
+\
+
+During analysis of astronauts data, we assumed that women engage in space race significantly less than men. Figure 16 confirmed our assumption. Women started racing only in 1980's. The research has shown, that until 1978, the military structures prohibited capable women in the Western world from becoming eligible to launch. In 1978 anti-discrimination laws were passed to open up the job to female applicants. The top country women astronauts come from is US (Figure 17).
+
+To see which professions are most common for astronauts we used Figure 23, which shows that the most popular professions are MSP, Pilot, Commander.
+
+As the data also provided information on the time spent in space during each mission, we checked the distribution of time. We hypothesized that astronauts stay in space not more than a few months. Figure 18 shows that indeed they mostly spend not more than 50 days in space. However, there are some very long-lasted missions. The longest one lasted more than 400 days. Valery Polyakov holds the record; he was up in space from January 1994 until March 1995. He orbited the Earth 7000 times and spent his time in space doing experiments and scientific research.
+
+Finally, we hypothesized the missions raise interest in people to follow news of science and space exploration. This was confirmed with the plot taken from Google Trends (Figure below). For example, the pick in July 2021 could be conditioned by famous British entrepreneur Richard Branson's travel in space and safe landing.
+
+![Interest over time, Popularity of the term ‘Space’](Searches.png)
+
+\newpage
+
+
+# Conclusion
+
+
+In conclusion, we found out that USSR was a leader in space race and was competing with US. However, compared to USSR, Russia is not an active participant in space exploration, and the new opponent of US is China. Also, we saw that the leader company in the number of missions is RVSN USSR. We concluded that women astronauts started to be engaged in space race in 1980's. Additionally, we saw that the success of SpaceX missions does not always unequivocally lead to increase in the stock price of Tesla. Also, we saw that most of the missions done on wednesdays are successful. And finally, we confirmed that the space exploration and news increase the interest in people to learn more about outer space. 
+
+
+\newpage
+
+# References 
+
+
+* https://www.britannica.com/science/space-exploration/Major-milestones
+* https://www.nasa.gov/mission_pages/station/research/news/iss-20-years-20-breakthroughs
+* https://www.usatoday.com/story/money/2019/07/08/space-race-inventions-we-use-every-day-were-created-for-space-exploration/39580591/
+* https://www.nasa.gov/sites/default/files/atoms/files/beyond-earth-tagged.pdf
+* https://education.nationalgeographic.org/resource/history-space-exploration
+* https://www.jstor.org/stable/23745903
+* https://trends.google.com/trends/explore?date=all&q=space
+* https://edition.cnn.com/business/live-news/richard-branson-space-flight/index.html
+
